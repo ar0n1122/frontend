@@ -136,6 +136,14 @@ export default function MessageBubble({message, showRetry, onRetry}: MessageBubb
                     {message.ragas && (
                         <span className="text-[11px]">📊 Faithfulness: {message.ragas.faithfulness.toFixed(2)}</span>
                     )}
+                    {message.cost && (
+                        <span className="text-[11px]" title={`${message.cost.total_tokens.toLocaleString()} tokens (${message.cost.event_count} LLM calls)`}>
+                            💰 {message.cost.total_cost < 0.001 && message.cost.total_cost > 0
+                                ? `$${message.cost.total_cost.toFixed(6)}`
+                                : `$${message.cost.total_cost.toFixed(4)}`}
+                            {' '}· {message.cost.total_tokens.toLocaleString()} tok
+                        </span>
+                    )}
                     {message.model && (
                         <span className="text-[11px] italic">{message.model}</span>
                     )}

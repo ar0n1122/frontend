@@ -166,7 +166,7 @@ export function useChat(opts: UseChatOptions) {
           document_metadata: overrides?.document_metadata,
           include_ragas: opts.include_ragas,
           llm_provider: opts.llm_provider,
-          session_id: sid,
+          session_id: sid ?? undefined,
         });
 
         const botMsg: ChatMessage = {
@@ -177,6 +177,7 @@ export function useChat(opts: UseChatOptions) {
           latency: result.latency,
           ragas: result.ragas,
           model: result.model,
+          cost: result.cost,
           timestamp: new Date(),
         };
 
@@ -243,7 +244,7 @@ export function useChat(opts: UseChatOptions) {
           document_ids: documentIds ?? opts.document_ids,
           include_ragas: opts.include_ragas,
           llm_provider: opts.llm_provider,
-          session_id: sid,
+          session_id: sid ?? undefined,
         });
         const botMsg: ChatMessage = {
           id: makeId(),
@@ -253,6 +254,7 @@ export function useChat(opts: UseChatOptions) {
           latency: result.latency,
           ragas: result.ragas,
           model: result.model,
+          cost: result.cost,
           timestamp: new Date(),
         };
 
