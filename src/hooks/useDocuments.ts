@@ -75,60 +75,66 @@ export interface UploadingFile {
   documentId?: string;
 }
 
-const POLL_INTERVAL = 30_000;
-const POLL_TIMEOUT = 60_000;
+const POLL_INTERVAL = 300_000; // 5 minutes
+const POLL_TIMEOUT = 1_800_000; // 30 minutes
 const TERMINAL_STATUSES: DocumentStatus[] = ["indexed", "failed"];
+
+interface PollingEntry {
+  key: string;
+  documentId: string;
+  startedAt: number;
+}
 
 export function useUploadDocument(onRefresh?: () => void) {
   const [uploads, setUploads] = useState<Map<string, UploadingFile>>(new Map());
-  const pollingRef = useRef<Map<string, ReturnType<typeof setInterval>>>(
-    new Map(),
-  );
+  // Single shared timer + a map of documents to poll
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollingQueueRef = useRef<Map<string, PollingEntry>>(new Map());
+  const isPollingRef = useRef(false);
 
-  // Clean up polling on unmount
-  useEffect(() => {
-    return () => {
-      pollingRef.current.forEach((id) => clearInterval(id));
-      pollingRef.current.clear();
-    };
-  }, []);
+  const runPollCycle = useCallback(async () => {
+    if (isPollingRef.current) return;
+    const queue = pollingQueueRef.current;
+    if (queue.size === 0) return;
 
-  const startPolling = (key: string, documentId: string) => {
-    if (pollingRef.current.has(key)) return;
+    isPollingRef.current = true;
+    let didFinishAny = false;
 
-    const startedAt = Date.now();
+    // Snapshot keys so we can mutate the map during iteration
+    const entries = Array.from(queue.values());
 
-    const interval = setInterval(async () => {
-      // Stop polling after timeout
+    for (const entry of entries) {
+      const { key, documentId, startedAt } = entry;
+
+      // Stop polling this entry after timeout
       if (Date.now() - startedAt > POLL_TIMEOUT) {
-        clearInterval(interval);
-        pollingRef.current.delete(key);
+        queue.delete(key);
         setUploads((prev) => {
           const next = new Map(prev);
-          const entry = next.get(key);
-          if (entry && entry.status === "processing") {
+          const u = next.get(key);
+          if (u && u.status === "processing") {
             next.set(key, {
-              ...entry,
+              ...u,
               status: "processing",
               error: "Still processing — use refresh to check status",
             });
           }
           return next;
         });
-        return;
+        continue;
       }
 
       try {
         const doc = await documentsApi.get(documentId);
         if (TERMINAL_STATUSES.includes(doc.status)) {
-          clearInterval(interval);
-          pollingRef.current.delete(key);
+          queue.delete(key);
+          didFinishAny = true;
           setUploads((prev) => {
             const next = new Map(prev);
-            const entry = next.get(key);
-            if (entry) {
+            const u = next.get(key);
+            if (u) {
               next.set(key, {
-                ...entry,
+                ...u,
                 progress: 100,
                 status: doc.status === "indexed" ? "done" : "error",
                 error:
@@ -137,25 +143,55 @@ export function useUploadDocument(onRefresh?: () => void) {
             }
             return next;
           });
-          onRefresh?.();
         } else if (doc.progress !== undefined && doc.progress !== null) {
-          // Update progress from backend
           setUploads((prev) => {
             const next = new Map(prev);
-            const entry = next.get(key);
-            if (entry && entry.status === "processing") {
-              next.set(key, { ...entry, progress: doc.progress ?? 0 });
+            const u = next.get(key);
+            if (u && u.status === "processing") {
+              next.set(key, { ...u, progress: doc.progress ?? 0 });
             }
             return next;
           });
         }
       } catch {
-        // If the doc isn't found yet, keep polling
+        // If the doc isn't found yet, keep it in the queue
       }
-    }, POLL_INTERVAL);
+    }
 
-    pollingRef.current.set(key, interval);
-  };
+    isPollingRef.current = false;
+    if (didFinishAny) onRefresh?.();
+
+    // Schedule next cycle if there are still items to poll
+    if (queue.size > 0) {
+      timerRef.current = setTimeout(runPollCycle, POLL_INTERVAL);
+    } else {
+      timerRef.current = null;
+    }
+  }, [onRefresh]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      pollingQueueRef.current.clear();
+    };
+  }, []);
+
+  const startPolling = useCallback(
+    (key: string, documentId: string) => {
+      if (pollingQueueRef.current.has(key)) return;
+      pollingQueueRef.current.set(key, {
+        key,
+        documentId,
+        startedAt: Date.now(),
+      });
+      // Start the shared timer if it isn't already running
+      if (!timerRef.current && !isPollingRef.current) {
+        timerRef.current = setTimeout(runPollCycle, POLL_INTERVAL);
+      }
+    },
+    [runPollCycle],
+  );
 
   const uploadSingleFile = async (file: File) => {
     const key = `${file.name}-${file.size}`;
@@ -406,11 +442,7 @@ export function useUploadDocument(onRefresh?: () => void) {
       const next = new Map(prev);
       for (const [k, v] of next) {
         if (v.status === "done" || v.status === "error") {
-          const interval = pollingRef.current.get(k);
-          if (interval) {
-            clearInterval(interval);
-            pollingRef.current.delete(k);
-          }
+          pollingQueueRef.current.delete(k);
           next.delete(k);
         }
       }
@@ -418,54 +450,59 @@ export function useUploadDocument(onRefresh?: () => void) {
     });
   };
 
-  const checkStatus = async (documentId: string) => {
-    // Find the upload key for this document
-    let foundKey: string | undefined;
-    setUploads((prev) => {
-      for (const [k, v] of prev) {
-        if (v.documentId === documentId) {
-          foundKey = k;
-          break;
+  const checkStatus = useCallback(
+    async (documentId: string) => {
+      // Find the upload key for this document
+      let foundKey: string | undefined;
+      setUploads((prev) => {
+        for (const [k, v] of prev) {
+          if (v.documentId === documentId) {
+            foundKey = k;
+            break;
+          }
         }
-      }
-      return prev;
-    });
-    if (!foundKey) return;
-    const key = foundKey;
+        return prev;
+      });
+      if (!foundKey) return;
+      const key = foundKey;
 
-    try {
-      const doc = await documentsApi.get(documentId);
-      if (TERMINAL_STATUSES.includes(doc.status)) {
-        setUploads((prev) => {
-          const next = new Map(prev);
-          const e = next.get(key);
-          if (e) {
-            next.set(key, {
-              ...e,
-              progress: 100,
-              status: doc.status === "indexed" ? "done" : "error",
-              error: doc.status === "failed" ? "Processing failed" : undefined,
-            });
-          }
-          return next;
-        });
-        onRefresh?.();
-      } else {
-        // Update progress and restart polling if still processing
-        setUploads((prev) => {
-          const next = new Map(prev);
-          const e = next.get(key);
-          if (e && e.status === "processing") {
-            next.set(key, { ...e, progress: doc.progress ?? e.progress });
-          }
-          return next;
-        });
-        startPolling(key, documentId);
+      try {
+        const doc = await documentsApi.get(documentId);
+        if (TERMINAL_STATUSES.includes(doc.status)) {
+          pollingQueueRef.current.delete(key);
+          setUploads((prev) => {
+            const next = new Map(prev);
+            const e = next.get(key);
+            if (e) {
+              next.set(key, {
+                ...e,
+                progress: 100,
+                status: doc.status === "indexed" ? "done" : "error",
+                error:
+                  doc.status === "failed" ? "Processing failed" : undefined,
+              });
+            }
+            return next;
+          });
+          onRefresh?.();
+        } else {
+          // Update progress and restart polling if still processing
+          setUploads((prev) => {
+            const next = new Map(prev);
+            const e = next.get(key);
+            if (e && e.status === "processing") {
+              next.set(key, { ...e, progress: doc.progress ?? e.progress });
+            }
+            return next;
+          });
+          startPolling(key, documentId);
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
-  };
+    },
+    [onRefresh, startPolling],
+  );
 
   return {
     uploads: Array.from(uploads.values()),

@@ -75,6 +75,7 @@ export interface QueryResponse {
   };
   ragas?: RagasScores;
   model: string;
+  cost?: QueryCost;
 }
 
 export interface DocumentMeta {
@@ -103,8 +104,15 @@ export interface ChatMessage {
   latency?: QueryResponse["latency"];
   ragas?: RagasScores;
   model?: string;
+  cost?: QueryCost;
   timestamp: Date;
   isError?: boolean;
+  /** Document IDs attached to this user message (persisted for follow-ups). */
+  document_ids?: string[];
+  /** Document metadata snapshot at the time the message was sent. */
+  document_metadata?: DocumentMeta[];
+  /** ID of the pending bot reply (set on the user msg while the query is in-flight). */
+  _pendingReplyId?: string;
 }
 
 /* =========================================================
@@ -228,4 +236,65 @@ export interface ChatSession {
   messages: ChatMessage[];
   created_at: string;
   updated_at: string;
+}
+
+/* =========================================================
+   USAGE / COST ANALYTICS
+   ========================================================= */
+export interface OperationBreakdown {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost: number;
+  calls: number;
+}
+
+export interface QueryCost {
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  total_cost: number;
+  breakdown_by_operation: Record<string, OperationBreakdown>;
+  event_count: number;
+}
+
+export interface UsageEvent {
+  operation: string;
+  provider: string;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_input: number;
+  cost_output: number;
+  cost_total: number;
+  timestamp: string;
+}
+
+export interface UsageRecord {
+  id: string;
+  query_id: string;
+  query_text: string;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  total_cost: number;
+  events: UsageEvent[];
+  breakdown_by_operation: Record<string, OperationBreakdown>;
+  breakdown_by_model: Record<string, OperationBreakdown>;
+  created_at: string;
+}
+
+export interface UsageSummary {
+  user_id: string;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  total_cost: number;
+  total_queries: number;
+  avg_cost_per_query: number;
+  avg_tokens_per_query: number;
+  breakdown_by_model: Record<string, OperationBreakdown>;
+  breakdown_by_operation: Record<string, OperationBreakdown>;
+  daily_costs: Record<string, number>;
 }

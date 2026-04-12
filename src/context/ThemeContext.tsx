@@ -6,7 +6,7 @@ import {
     useState,
 } from 'react'
 
-export type Theme = 'light' | 'dark' | 'solarized'
+export type Theme = 'dark' | 'solarized'
 
 interface ThemeContextValue {
     theme: Theme
@@ -18,7 +18,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 export function ThemeProvider({children}: {children: React.ReactNode}) {
     const [theme, setThemeState] = useState<Theme>(() => {
         const saved = localStorage.getItem('rag-theme') as Theme | null
-        return saved ?? 'light'
+        if (saved && (saved === 'dark' || saved === 'solarized')) return saved
+        return 'dark'
     })
 
     const setTheme = useCallback((next: Theme) => {

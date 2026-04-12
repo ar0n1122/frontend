@@ -8,7 +8,6 @@ interface ThemeDef {
 }
 
 const THEMES: ThemeDef[] = [
-    {id: 'light', icon: '☀️', label: 'Light'},
     {id: 'dark', icon: '🌙', label: 'Dark'},
     {id: 'solarized', icon: '🌿', label: 'Solarized'},
 ]

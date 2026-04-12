@@ -10,6 +10,8 @@ import type {
   IngestResponse,
   QueryRequest,
   QueryResponse,
+  UsageRecord,
+  UsageSummary,
 } from "@/types";
 
 // ===== AXIOS INSTANCE =====
@@ -159,6 +161,19 @@ export const chatsApi = {
 
   delete: (id: string): Promise<void> =>
     http.delete(`/chats/${id}`).then(() => undefined),
+};
+
+// ===== USAGE / COST =====
+export const usageApi = {
+  summary: (): Promise<UsageSummary> =>
+    http.get<UsageSummary>("/usage/summary").then((r) => r.data),
+
+  history: (params?: {
+    limit?: number;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<UsageRecord[]> =>
+    http.get<UsageRecord[]>("/usage/history", { params }).then((r) => r.data),
 };
 
 export default http;

@@ -26,6 +26,7 @@ const NAV_MAIN: NavItemDef[] = [
 
 const NAV_ANALYTICS: NavItemDef[] = [
     {to: '/evaluation', icon: '📊', label: 'Evaluation'},
+    {to: '/usage', icon: '💰', label: 'Usage & Costs'},
     {to: '/health', icon: '🏥', label: 'Health'},
 ]
 
@@ -38,6 +39,7 @@ const PAGE_META: Record<string, {title: string; subtitle: string}> = {
     '/documents': {title: 'Documents', subtitle: 'Upload and manage your PDF documents'},
     '/evaluation': {title: 'Evaluation', subtitle: 'Benchmark metrics and quality analysis'},
     '/health': {title: 'System Health', subtitle: 'Service status and pipeline monitoring'},
+    '/usage': {title: 'Usage & Costs', subtitle: 'Token consumption, cost breakdown and analytics'},
     '/settings': {title: 'Settings', subtitle: 'Configuration and preferences'},
 }
 

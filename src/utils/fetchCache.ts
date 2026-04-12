@@ -6,7 +6,7 @@
  * - `invalidate(key)` clears the cached result so the next call goes over the wire.
  */
 
-const TTL_MS = 30_000;
+const TTL_MS = 300_000; // 5 minutes
 
 interface Entry<T> {
   promise?: Promise<T>;
