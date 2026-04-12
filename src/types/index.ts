@@ -107,6 +107,12 @@ export interface ChatMessage {
   cost?: QueryCost;
   timestamp: Date;
   isError?: boolean;
+  /** Document IDs attached to this user message (persisted for follow-ups). */
+  document_ids?: string[];
+  /** Document metadata snapshot at the time the message was sent. */
+  document_metadata?: DocumentMeta[];
+  /** ID of the pending bot reply (set on the user msg while the query is in-flight). */
+  _pendingReplyId?: string;
 }
 
 /* =========================================================

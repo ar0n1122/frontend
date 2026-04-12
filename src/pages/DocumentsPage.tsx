@@ -16,10 +16,10 @@ export default function DocumentsPage() {
     const pendingDocs = (docs ?? []).filter((d) => d.status === 'processing' || d.status === 'uploaded' || d.status === 'queued')
     const indexedDocs = (docs ?? []).filter((d) => d.status === 'indexed' || d.status === 'failed')
 
-    // Auto-refresh every 15s while there are pending documents
+    // Auto-refresh every 5 min while there are pending documents
     useEffect(() => {
         if (pendingDocs.length === 0) return
-        const id = setInterval(() => refetch(true), 15_000)
+        const id = setInterval(() => refetch(true), 300_000)
         return () => clearInterval(id)
     }, [pendingDocs.length, refetch])
 

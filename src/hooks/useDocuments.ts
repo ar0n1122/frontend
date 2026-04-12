@@ -75,8 +75,8 @@ export interface UploadingFile {
   documentId?: string;
 }
 
-const POLL_INTERVAL = 90_000;
-const POLL_TIMEOUT = 120_000;
+const POLL_INTERVAL = 300_000; // 5 minutes
+const POLL_TIMEOUT = 1_800_000; // 30 minutes
 const TERMINAL_STATUSES: DocumentStatus[] = ["indexed", "failed"];
 
 interface PollingEntry {
