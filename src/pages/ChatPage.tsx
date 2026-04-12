@@ -24,7 +24,7 @@ export default function ChatPage() {
         newSession,
         deleteSession,
         retryMessage,
-        isLoading,
+        pendingIds,
         documentIds,
         setDocumentIds,
     } = useChat({
@@ -45,7 +45,7 @@ export default function ChatPage() {
 
     const handleSend = useCallback(async () => {
         const q = inputValue.trim()
-        if (!q || isLoading) return
+        if (!q) return
         setInputValue('')
         if (textareaRef.current) textareaRef.current.style.height = 'auto'
         // Build metadata from the currently visible indexed docs for the selected / attached IDs
@@ -55,10 +55,11 @@ export default function ChatPage() {
                 .filter((d: any) => effectiveIds.includes(d.id))
                 .map((d: any) => ({id: d.id, title: d.title || d.name || d.filename || d.id, filename: d.filename, status: d.status}))
             : undefined
-        await sendMessage(q, {document_ids: effectiveIds, document_metadata: metadata})
+        // Fire-and-forget — don't await so the user can send more messages immediately
+        void sendMessage(q, {document_ids: effectiveIds, document_metadata: metadata})
         setAttachedIds(undefined)
         endRef.current?.scrollIntoView({behavior: 'smooth'})
-    }, [inputValue, isLoading, sendMessage, attachedIds, documentIds])
+    }, [inputValue, sendMessage, attachedIds, documentIds])
 
     const handleKey = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -69,11 +70,6 @@ export default function ChatPage() {
 
     const handleTextarea = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setInputValue(e.target.value)
-        // clear attachments and sidebar selection when user starts typing
-        if ((attachedIds && attachedIds.length > 0) || (documentIds && documentIds.length > 0)) {
-            setAttachedIds(undefined)
-            setDocumentIds?.([])
-        }
         e.target.style.height = 'auto'
         e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
     }
@@ -115,7 +111,7 @@ export default function ChatPage() {
         setIsDragActive(true)
     }
 
-    const onDragLeaveInput = (e: React.DragEvent) => {
+    const onDragLeaveInput = (_e: React.DragEvent) => {
         // when the pointer leaves the area, turn highlight off
         setIsDragActive(false)
     }
@@ -266,21 +262,24 @@ export default function ChatPage() {
                         ) : (
                             <>
                                 {messages.map((msg, idx) => {
-                                    // Show retry on user messages whose next message is an error (or absent)
+                                    // Show retry on user messages whose next message is an error (or absent & not pending)
                                     const next = messages[idx + 1]
+                                    const isPending = !!(msg._pendingReplyId && pendingIds.has(msg._pendingReplyId))
                                     const needsRetry =
                                         msg.role === 'user' &&
+                                        !isPending &&
                                         (!next || next.isError)
                                     return (
-                                        <MessageBubble
-                                            key={msg.id}
-                                            message={msg}
-                                            showRetry={needsRetry && !isLoading}
-                                            onRetry={retryMessage}
-                                        />
+                                        <div key={msg.id}>
+                                            <MessageBubble
+                                                message={msg}
+                                                showRetry={needsRetry}
+                                                onRetry={retryMessage}
+                                            />
+                                            {isPending && <TypingIndicator />}
+                                        </div>
                                     )
                                 })}
-                                {isLoading && <TypingIndicator />}
                             </>
                         )}
                         <div ref={endRef} />
@@ -340,15 +339,11 @@ export default function ChatPage() {
                         </div>
                         <button
                             onClick={() => void handleSend()}
-                            disabled={!hasIndexedDocs || !inputValue.trim() || isLoading}
+                            disabled={!hasIndexedDocs || !inputValue.trim()}
                             className="w-10 h-10 rounded-xl text-white flex items-center justify-center text-[18px] flex-shrink-0 transition-all duration-200 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                             style={{background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))'}}
                         >
-                            {isLoading ? (
-                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                                '➤'
-                            )}
+                            ➤
                         </button>
                     </div>
                     <p className="text-[11px] text-[var(--text-tertiary)] text-center mt-2">

@@ -14,9 +14,9 @@ export interface UseChatOptions {
   llm_provider: "ollama" | "openai";
 }
 
-/** Serialize ChatMessage[] for the API (Date → ISO string). */
+/** Serialize ChatMessage[] for the API (Date → ISO string, strip transient fields). */
 function serializeMessages(msgs: ChatMessage[]) {
-  return msgs.map((m) => ({
+  return msgs.map(({ _pendingReplyId, ...m }) => ({
     ...m,
     timestamp:
       m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
@@ -27,11 +27,13 @@ export function useChat(opts: UseChatOptions) {
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSave = useRef<{ sid: string; msgs: ChatMessage[] } | null>(null);
+  // Track the session being created to avoid racing auto-creates
+  const creatingSessionRef = useRef<Promise<string | null> | null>(null);
 
   // Document scoping state (undefined means use backend default => all documents)
   const [documentIds, setDocumentIds] = useState<string[] | undefined>(
@@ -121,7 +123,7 @@ export function useChat(opts: UseChatOptions) {
     [activeSessionId, refreshSessions],
   );
 
-  // ── Send message ──
+  // ── Send message (truly async — multiple can be in-flight) ──
   const sendMessage = useCallback(
     async (
       question: string,
@@ -132,32 +134,46 @@ export function useChat(opts: UseChatOptions) {
     ) => {
       if (!question.trim()) return;
 
-      // Auto-create a session if none is active
+      // Auto-create a session if none is active (deduplicated via ref)
       let sid = activeSessionId;
       if (!sid) {
-        const firstWords =
-          question.length > 40 ? question.slice(0, 40) + "…" : question;
-        sid = (await newSession(firstWords)) ?? null;
+        if (!creatingSessionRef.current) {
+          const firstWords =
+            question.length > 40 ? question.slice(0, 40) + "…" : question;
+          creatingSessionRef.current = newSession(firstWords);
+        }
+        sid = (await creatingSessionRef.current) ?? null;
+        creatingSessionRef.current = null;
       }
 
+      // Resolve effective document IDs: explicit overrides > last user message's docs > sidebar > opts
+      const effectiveIds =
+        overrides?.document_ids ?? documentIds ?? opts.document_ids;
+
+      const userMsgId = makeId();
+      const botMsgId = makeId();
+
       const userMsg: ChatMessage = {
-        id: makeId(),
+        id: userMsgId,
         role: "user",
         content: question,
         timestamp: new Date(),
+        document_ids: effectiveIds,
+        document_metadata: overrides?.document_metadata,
+        _pendingReplyId: botMsgId,
       };
 
+      // Optimistically add user message
       setMessages((prev) => {
         const next = [...prev, userMsg];
         if (sid) scheduleSave(sid, next);
         return next;
       });
 
-      setIsLoading(true);
+      // Track this reply as in-flight
+      setPendingIds((prev) => new Set(prev).add(botMsgId));
 
       try {
-        const effectiveIds =
-          overrides?.document_ids ?? documentIds ?? opts.document_ids;
         const result = await queryApi.ask({
           question,
           top_k: opts.top_k,
@@ -166,38 +182,52 @@ export function useChat(opts: UseChatOptions) {
           document_metadata: overrides?.document_metadata,
           include_ragas: opts.include_ragas,
           llm_provider: opts.llm_provider,
-          session_id: sid,
+          session_id: sid ?? undefined,
         });
 
         const botMsg: ChatMessage = {
-          id: makeId(),
+          id: botMsgId,
           role: "assistant",
           content: result.answer,
           sources: result.sources,
           latency: result.latency,
           ragas: result.ragas,
           model: result.model,
+          cost: result.cost,
           timestamp: new Date(),
         };
 
         setMessages((prev) => {
-          const next = [...prev, botMsg];
+          // Clear _pendingReplyId from the user message and append the bot reply
+          const next = prev.map((m) =>
+            m.id === userMsgId ? { ...m, _pendingReplyId: undefined } : m,
+          );
+          next.push(botMsg);
           if (sid) scheduleSave(sid, next);
           return next;
         });
       } catch {
         const errMsg: ChatMessage = {
-          id: makeId(),
+          id: botMsgId,
           role: "assistant",
           content:
             "⚠️ Failed to get a response. Please check the backend is running on `localhost:8000`.",
           timestamp: new Date(),
           isError: true,
         };
-        setMessages((prev) => [...prev, errMsg]);
-        // Don't persist error messages to Firestore
+        setMessages((prev) => {
+          const next = prev.map((m) =>
+            m.id === userMsgId ? { ...m, _pendingReplyId: undefined } : m,
+          );
+          next.push(errMsg);
+          return next;
+        });
       } finally {
-        setIsLoading(false);
+        setPendingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(botMsgId);
+          return next;
+        });
         void refreshSessions();
       }
     },
@@ -218,61 +248,88 @@ export function useChat(opts: UseChatOptions) {
 
   const retryMessage = useCallback(
     async (messageId: string) => {
-      // Remove any existing error reply following the user message and then resend
+      const userMsg = messages.find((m) => m.id === messageId);
+      if (!userMsg) return;
+
+      // Remove any existing error reply following the user message
       setMessages((prev) => {
         const idx = prev.findIndex((m) => m.id === messageId);
         if (idx === -1) return prev;
-        const next = prev[idx + 1];
-        if (next?.isError) {
+        const next_msg = prev[idx + 1];
+        if (next_msg?.isError) {
           return [...prev.slice(0, idx + 1), ...prev.slice(idx + 2)];
         }
         return prev;
       });
 
-      const userMsg = messages.find((m) => m.id === messageId);
-      if (!userMsg) return;
       const question = userMsg.content;
+      // Reuse the document_ids from the original user message for the retry
+      const retryDocIds =
+        userMsg.document_ids ?? documentIds ?? opts.document_ids;
 
       let sid = activeSessionId;
-      setIsLoading(true);
+      const botMsgId = makeId();
+
+      // Mark the user message as having a pending reply
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, _pendingReplyId: botMsgId } : m,
+        ),
+      );
+      setPendingIds((prev) => new Set(prev).add(botMsgId));
+
       try {
         const result = await queryApi.ask({
           question,
           top_k: opts.top_k,
           modalities: opts.modalities,
-          document_ids: documentIds ?? opts.document_ids,
+          document_ids: retryDocIds,
           include_ragas: opts.include_ragas,
           llm_provider: opts.llm_provider,
-          session_id: sid,
+          session_id: sid ?? undefined,
         });
         const botMsg: ChatMessage = {
-          id: makeId(),
+          id: botMsgId,
           role: "assistant",
           content: result.answer,
           sources: result.sources,
           latency: result.latency,
           ragas: result.ragas,
           model: result.model,
+          cost: result.cost,
           timestamp: new Date(),
         };
 
         setMessages((prev) => {
-          const next = [...prev, botMsg];
+          const next = prev.map((m) =>
+            m.id === messageId ? { ...m, _pendingReplyId: undefined } : m,
+          );
+          next.push(botMsg);
           if (sid) scheduleSave(sid, next);
           return next;
         });
       } catch {
         const errMsg: ChatMessage = {
-          id: makeId(),
+          id: botMsgId,
           role: "assistant",
           content:
             "⚠️ Failed to get a response. Please check the backend is running on `localhost:8000`.",
           timestamp: new Date(),
           isError: true,
         };
-        setMessages((prev) => [...prev, errMsg]);
+        setMessages((prev) => {
+          const next = prev.map((m) =>
+            m.id === messageId ? { ...m, _pendingReplyId: undefined } : m,
+          );
+          next.push(errMsg);
+          return next;
+        });
       } finally {
-        setIsLoading(false);
+        setPendingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(botMsgId);
+          return next;
+        });
         void refreshSessions();
       }
     },
@@ -286,6 +343,9 @@ export function useChat(opts: UseChatOptions) {
     ],
   );
 
+  // Derived: true when any query is in-flight (backwards-compat)
+  const isLoading = pendingIds.size > 0;
+
   return {
     messages,
     sessions,
@@ -298,6 +358,7 @@ export function useChat(opts: UseChatOptions) {
     deleteSession,
     retryMessage,
     isLoading,
+    pendingIds,
     abortRef,
     // document scoping
     documentIds: documentIds,

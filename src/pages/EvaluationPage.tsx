@@ -158,7 +158,7 @@ export default function EvaluationPage() {
                                             ['Answer Relevance', '0.70', '0.80', '+0.10', 'up'],
                                             ['Context Precision', '0.78', '0.78', '0.00', 'neutral'],
                                             ['Avg Latency', '2,100ms', '1,200ms', '-900ms', 'up'],
-                                        ].map(([metric, ollama, openai, delta, dir]) => (
+                                        ].map(([metric, ollama, openai, delta, _dir]) => (
                                             <tr key={metric} className="table-row-hover">
                                                 <td className="px-4 py-3.5 text-[13px] font-bold text-[var(--text-primary)] border-b border-[var(--border-primary)]">{metric}</td>
                                                 <td className="px-4 py-3.5 text-[13px] text-[var(--text-primary)] border-b border-[var(--border-primary)]">{ollama}</td>

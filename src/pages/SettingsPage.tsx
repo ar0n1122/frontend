@@ -93,8 +93,7 @@ export default function SettingsPage() {
         showToast('Query settings saved')
     }
 
-    const THEMES: {id: 'light' | 'dark' | 'solarized'; label: string; icon: string; desc: string}[] = [
-        {id: 'light', label: 'Light', icon: '☀️', desc: 'Clean, minimal — great for daytime use'},
+    const THEMES: {id: 'dark' | 'solarized'; label: string; icon: string; desc: string}[] = [
         {id: 'dark', label: 'Dark', icon: '🌙', desc: 'Easy on the eyes in low-light environments'},
         {id: 'solarized', label: 'Solarized', icon: '🌿', desc: 'Warm earth tones, reduced contrast, cozy'},
     ]
