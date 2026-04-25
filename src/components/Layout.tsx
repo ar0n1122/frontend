@@ -77,12 +77,12 @@ export default function Layout() {
                     style={{borderBottom: '1px solid var(--border-secondary)'}}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center text-lg font-bold text-white shadow-lg" style={{background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))'}}>
+                        <div className="w-[38px] h-[38px] flex items-center justify-center text-lg font-bold text-white" style={{background: 'var(--accent)'}}>
                             ⚡
                         </div>
                         <div>
-                            <div className="text-[#f8fafc] text-[16px] font-bold tracking-tight">RAG Platform</div>
-                            <div className="text-[11px] font-medium uppercase tracking-widest" style={{background: 'linear-gradient(90deg, var(--accent), var(--accent-secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                            <div className="text-[#f8fafc] text-[20px] tracking-[-0.02em]" style={{fontFamily: 'var(--font-display)'}}>RAG Platform</div>
+                            <div className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{color: 'var(--text-sidebar)'}}>
                                 Enterprise AI
                             </div>
                         </div>
@@ -143,7 +143,7 @@ export default function Layout() {
                     )}
                     <button
                         onClick={signOut}
-                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[var(--text-sidebar)] text-[14px] font-medium transition-all duration-150 hover:bg-[var(--bg-sidebar-hover)] hover:text-slate-200 w-full"
+                        className="flex items-center gap-3 px-3.5 py-2.5 text-[var(--text-sidebar)] text-[14px] font-medium transition-all duration-150 hover:bg-[var(--bg-sidebar-hover)] hover:text-slate-200 w-full"
                     >
                         <span className="text-lg w-[22px] text-center">↗</span>
                         <span>Sign out</span>
@@ -159,14 +159,14 @@ export default function Layout() {
                     style={{
                         background: 'var(--bg-primary)',
                         borderBottom: '1px solid var(--border-primary)',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        boxShadow: 'none',
                     }}
                 >
                     <div className="flex items-center gap-4">
                         <button
                             title="Toggle sidebar"
                             onClick={() => setSidebarCollapsed((s) => !s)}
-                            className="ml-0 w-10 h-10 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-primary)] flex items-center justify-center text-[18px] shadow-sm hover:shadow-md hover:border-[var(--accent)]/30 transition-all duration-200"
+                            className="ml-0 w-10 h-10 bg-[var(--bg-primary)] border-2 border-[var(--border-primary)] flex items-center justify-center text-[18px] hover:border-[var(--accent)] transition-all duration-200"
                         >
                             ☰
                         </button>
@@ -208,9 +208,9 @@ function SidebarItem({item, badge}: {item: NavItemDef; badge?: string}) {
             to={item.to}
             className={({isActive}) =>
                 clsx(
-                    'nav-active-indicator flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14px] font-medium transition-all duration-150 mb-0.5 w-full',
+                    'nav-active-indicator flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-medium transition-all duration-150 mb-0.5 w-full',
                     isActive
-                        ? 'active bg-[var(--bg-sidebar-active)] text-white font-semibold shadow-sm'
+                        ? 'active bg-[var(--bg-sidebar-active)] text-white font-semibold'
                         : 'text-[var(--text-sidebar)] hover:bg-[var(--bg-sidebar-hover)] hover:text-slate-200',
                 )
             }

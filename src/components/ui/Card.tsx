@@ -22,9 +22,9 @@ export function Card({children, className, hover = false}: CardProps) {
     return (
         <div
             className={clsx(
-                'rounded-xl shadow-sm transition-all duration-200',
-                'bg-[var(--bg-card)] border border-[var(--border-primary)]',
-                hover && 'card-lift hover:shadow-lg hover:border-[var(--accent)]/20',
+                'rounded-none transition-all duration-200',
+                'bg-[var(--bg-card)] border-2 border-[var(--border-primary)]',
+                hover && 'card-lift hover:border-[var(--border-strong)]',
                 className,
             )}
         >
