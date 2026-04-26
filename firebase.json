@@ -34,13 +34,6 @@
     "trailingSlash": false,
     "rewrites": [
       {
-        "source": "/api/**",
-        "run": {
-          "serviceId": "rag-backend",
-          "region": "us-central1"
-        }
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
