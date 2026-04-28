@@ -32,6 +32,12 @@ http.interceptors.response.use(
   (r) => r,
   (err) => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const requestUrl: string = err?.config?.url ?? "";
+    // Only dispatch session-expired for protected endpoints, not the auth flow itself
+    if (err?.response?.status === 401 && !requestUrl.startsWith("/auth")) {
+      window.dispatchEvent(new CustomEvent("auth:expired"));
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const msg: string =
       err?.response?.data?.detail ?? err.message ?? "Unknown error";
     return Promise.reject(new Error(msg));

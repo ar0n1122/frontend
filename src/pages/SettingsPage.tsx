@@ -74,7 +74,7 @@ function Toast({msg, onClose}: {msg: string; onClose: () => void}) {
 
 /* ============================================================ */
 export default function SettingsPage() {
-    const {theme, setTheme} = useTheme()
+    const {theme, setTheme, design, setDesign} = useTheme()
     const [settings, setSettings] = useState(loadSettings)
     const [toast, setToast] = useState<string | null>(null)
     const apiKeyRef = useRef<HTMLInputElement>(null)
@@ -93,34 +93,69 @@ export default function SettingsPage() {
         showToast('Query settings saved')
     }
 
-    const THEMES: {id: 'dark' | 'solarized'; label: string; icon: string; desc: string}[] = [
-        {id: 'dark', label: 'Dark', icon: '🌙', desc: 'Easy on the eyes in low-light environments'},
-        {id: 'solarized', label: 'Solarized', icon: '🌿', desc: 'Warm earth tones, reduced contrast, cozy'},
+    const DESIGNS: {id: 'voicebox' | 'ember'; label: string; icon: string; desc: string}[] = [
+        {id: 'voicebox', label: 'VoiceBox', icon: '📰', desc: 'High-contrast editorial — angular, stark black & red'},
+        {id: 'ember', label: 'Ember Studio', icon: '🔥', desc: 'Warm craft aesthetic — terracotta, serif, soft radius'},
+    ]
+
+    const THEMES: {id: 'light' | 'dark'; label: string; icon: string; desc: string}[] = [
+        {id: 'light', label: 'Light', icon: '☀', desc: 'Bright backgrounds — best in well-lit environments'},
+        {id: 'dark', label: 'Dark', icon: '☾', desc: 'Dark backgrounds — easy on the eyes at night'},
     ]
 
     return (
         <div className="h-full overflow-y-auto px-6 py-6 space-y-6">
 
-            {/* === APPEARANCE === */}
             <Section title="Appearance">
                 <Card>
                     <CardBody>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)] mb-2">Design System</p>
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 mb-5">
+                            {DESIGNS.map((d) => (
+                                <button
+                                    key={d.id}
+                                    onClick={() => setDesign(d.id)}
+                                    className={`theme-card-glow relative flex flex-col items-start gap-2 p-4 border-2 text-left w-full ${design === d.id
+                                        ? 'selected border-[var(--accent)] bg-[var(--accent)]/10'
+                                        : 'border-[var(--border-primary)] hover:border-[var(--border-medium)] bg-[var(--bg-secondary)]'
+                                        }`}
+                                    style={{borderRadius: 'var(--radius-lg)'}}
+                                >
+                                    <div className="flex items-center justify-between w-full">
+                                        <span className="text-2xl">{d.icon}</span>
+                                        {design === d.id && (
+                                            <span
+                                                className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+                                                style={{background: 'var(--accent)'}}
+                                            >
+                                                ✓
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-[14px] font-bold text-[var(--text-primary)]">{d.label}</span>
+                                    <span className="text-[12px] text-[var(--text-secondary)] leading-snug">{d.desc}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)] mb-2">Color Scheme</p>
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
                             {THEMES.map((t) => (
                                 <button
                                     key={t.id}
                                     onClick={() => setTheme(t.id)}
-                                    className={`theme-card-glow relative flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left w-full ${theme === t.id
+                                    className={`theme-card-glow relative flex flex-col items-start gap-2 p-4 border-2 text-left w-full ${theme === t.id
                                         ? 'selected border-[var(--accent)] bg-[var(--accent)]/10'
-                                        : 'border-[var(--border-primary)] hover:border-[var(--border-hover)] bg-[var(--bg-secondary)]'
+                                        : 'border-[var(--border-primary)] hover:border-[var(--border-medium)] bg-[var(--bg-secondary)]'
                                         }`}
+                                    style={{borderRadius: 'var(--radius-lg)'}}
                                 >
                                     <div className="flex items-center justify-between w-full">
                                         <span className="text-2xl">{t.icon}</span>
                                         {theme === t.id && (
                                             <span
-                                                className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[11px] font-bold shadow-sm"
-                                                style={{background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))'}}
+                                                className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+                                                style={{background: 'var(--accent)'}}
                                             >
                                                 ✓
                                             </span>
