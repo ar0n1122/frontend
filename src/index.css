@@ -8,7 +8,7 @@
    DESIGN: VOICEBOX — LIGHT
    High-contrast editorial, angular, stark black & red.
    ========================================================= */
-[data-design='voicebox'][data-theme='light'] {
+[data-design='voicebox'][data-theme='colored'] {
   --bg-primary: #fafafa;
   --bg-secondary: #fafafa;
   --bg-tertiary: #f5f5f5;
@@ -173,7 +173,7 @@
    DESIGN: EMBER STUDIO — LIGHT
    Warm terracotta, craft-focused, serif display, soft radius.
    ========================================================= */
-[data-design='ember'][data-theme='light'] {
+[data-design='ember'][data-theme='colored'] {
   --bg-primary: #fafaf9;
   --bg-secondary: #fafaf9;
   --bg-tertiary: #f5f5f4;

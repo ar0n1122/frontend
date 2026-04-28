@@ -13,7 +13,7 @@ export default function ThemeSwitcher() {
                 title="Color scheme"
             >
                 {([
-                    {id: 'light', icon: '☀', label: 'Light'},
+                    {id: 'colored', icon: '✦', label: 'Colored'},
                     {id: 'dark', icon: '☾', label: 'Dark'},
                 ] as const).map((t) => (
                     <button
