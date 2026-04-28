@@ -7,19 +7,19 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null)
 
     return (
-        <div className="flex min-h-screen items-center justify-center gradient-animate" style={{background: 'linear-gradient(135deg, var(--bg-primary), var(--accent-light), var(--bg-secondary), var(--accent-light))'}}>
+        <div className="flex min-h-screen items-center justify-center px-4" style={{background: 'var(--bg-primary)'}}>
             <div
-                className="w-full max-w-md rounded-2xl p-10 text-center shadow-xl"
-                style={{background: 'var(--bg-modal)', border: '1px solid var(--border-primary)'}}
+                className="w-full max-w-md p-10 text-center"
+                style={{background: 'var(--bg-modal)', border: '2px solid var(--border-strong)'}}
             >
                 {/* Logo */}
-                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-bold text-white shadow-lg" style={{background: 'linear-gradient(135deg, var(--accent), var(--accent-secondary))'}}>
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center text-2xl font-bold text-white" style={{background: 'var(--accent)'}}>
                     ⚡
                 </div>
-                <h1 className="mb-1 text-2xl font-bold tracking-tight" style={{color: 'var(--text-primary)'}}>
+                <h1 className="mb-1 text-[38px] leading-[1.1] tracking-[-0.02em]" style={{color: 'var(--text-primary)', fontFamily: 'var(--font-display)'}}>
                     RAG Platform
                 </h1>
-                <p className="mb-2 text-sm font-medium" style={{background: 'linear-gradient(90deg, var(--accent), var(--accent-secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em]" style={{color: 'var(--text-secondary)'}}>
                     Enterprise Multimodal AI
                 </p>
                 <p className="mb-8 text-sm" style={{color: 'var(--text-secondary)'}}>
@@ -50,7 +50,7 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                    <p className="mt-4 text-sm font-medium rounded-lg px-3 py-2" style={{color: 'var(--danger)', background: '#fef2f2', border: '1px solid var(--danger)', borderColor: 'rgba(239,68,68,0.2)'}}>{error}</p>
+                    <p className="mt-4 text-sm font-medium px-3 py-2" style={{color: 'var(--danger)', background: '#FEF2F2', border: '2px solid var(--danger)'}}>{error}</p>
                 )}
 
                 <div className="mt-8 pt-6" style={{borderTop: '1px solid var(--border-primary)'}}>

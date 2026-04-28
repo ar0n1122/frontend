@@ -12,10 +12,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<Variant, string> = {
     primary:
-        'bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] text-white hover:shadow-lg hover:shadow-[var(--accent)]/20 hover:-translate-y-px active:translate-y-0 active:shadow-md',
+        'bg-[var(--text-primary)] text-[var(--text-on-primary)] border-2 border-[var(--text-primary)] hover:bg-[var(--accent)] hover:border-[var(--accent)]',
     secondary:
-        'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-primary)] hover:bg-[var(--bg-hover)] hover:border-[var(--border-secondary)] hover:-translate-y-px',
-    danger: 'bg-gradient-to-r from-[var(--danger)] to-[var(--danger-hover)] text-white hover:shadow-lg hover:shadow-[var(--danger)]/20',
+        'bg-transparent text-[var(--text-primary)] border-2 border-[var(--text-primary)] hover:bg-[var(--text-primary)] hover:text-[var(--text-on-primary)]',
+    danger: 'bg-[var(--danger)] text-[var(--text-on-primary)] border-2 border-[var(--danger)] hover:bg-[var(--danger-hover)] hover:border-[var(--danger-hover)]',
     ghost: 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]',
 }
 
@@ -38,7 +38,7 @@ export default function Button({
     return (
         <button
             className={clsx(
-                'inline-flex items-center rounded-[var(--radius-md)] font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+                'inline-flex items-center rounded-none font-semibold uppercase tracking-[0.06em] transition-all duration-200 whitespace-nowrap cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed',
                 variantStyles[variant],
                 sizeStyles[size],
                 className,
