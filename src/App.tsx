@@ -10,13 +10,17 @@ import HealthPage from '@/pages/HealthPage'
 import SettingsPage from '@/pages/SettingsPage'
 import UsagePage from '@/pages/UsagePage'
 import LoginPage from '@/pages/LoginPage'
+import ReLoginModal from '@/components/ReLoginModal'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
 
 function AuthenticatedRoutes() {
-    const {user, isLoading} = useAuth()
+    const {user, isLoading, isSessionExpired} = useAuth()
 
     if (isLoading) return null
+    // Session expired: show re-login modal only — do NOT render routes/pages
+    // because their hooks would fire API calls and produce a cascade of 401s.
+    if (isSessionExpired) return <ReLoginModal />
     if (!user) return <LoginPage />
 
     return (

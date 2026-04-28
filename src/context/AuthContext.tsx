@@ -6,8 +6,10 @@ import {authApi} from '@/services/api'
 interface AuthContextValue {
     user: AuthUser | null
     isLoading: boolean
+    isSessionExpired: boolean
     signIn: (googleIdToken: string) => Promise<void>
     signOut: () => void
+    clearSessionExpired: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -18,6 +20,7 @@ const USER_KEY = 'rag-user'
 export function AuthProvider({children}: {children: ReactNode}) {
     const [user, setUser] = useState<AuthUser | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [isSessionExpired, setIsSessionExpired] = useState(false)
 
     // Restore session from localStorage on mount
     useEffect(() => {
@@ -34,11 +37,24 @@ export function AuthProvider({children}: {children: ReactNode}) {
         setIsLoading(false)
     }, [])
 
+    // Listen for 401 events from the API interceptor
+    useEffect(() => {
+        const handleExpired = () => {
+            localStorage.removeItem(TOKEN_KEY)
+            localStorage.removeItem(USER_KEY)
+            setUser(null)
+            setIsSessionExpired(true)
+        }
+        window.addEventListener('auth:expired', handleExpired)
+        return () => window.removeEventListener('auth:expired', handleExpired)
+    }, [])
+
     const signIn = useCallback(async (googleIdToken: string) => {
         const res = await authApi.googleSignIn(googleIdToken)
         localStorage.setItem(TOKEN_KEY, res.access_token)
         localStorage.setItem(USER_KEY, JSON.stringify(res.user))
         setUser(res.user)
+        setIsSessionExpired(false)
     }, [])
 
     const signOut = useCallback(() => {
@@ -47,8 +63,12 @@ export function AuthProvider({children}: {children: ReactNode}) {
         setUser(null)
     }, [])
 
+    const clearSessionExpired = useCallback(() => {
+        setIsSessionExpired(false)
+    }, [])
+
     return (
-        <AuthContext.Provider value={{user, isLoading, signIn, signOut}}>
+        <AuthContext.Provider value={{user, isLoading, isSessionExpired, signIn, signOut, clearSessionExpired}}>
             {children}
         </AuthContext.Provider>
     )

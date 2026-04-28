@@ -1,36 +1,63 @@
 import clsx from 'clsx'
-import {useTheme, type Theme} from '@/context/ThemeContext'
-
-interface ThemeDef {
-    id: Theme
-    icon: string
-    label: string
-}
-
-const THEMES: ThemeDef[] = [
-    {id: 'dark', icon: '🌙', label: 'Dark'},
-    {id: 'solarized', icon: '🌿', label: 'Solarized'},
-]
+import {useTheme} from '@/context/ThemeContext'
 
 export default function ThemeSwitcher() {
-    const {theme, setTheme} = useTheme()
+    const {theme, design, setTheme, setDesign} = useTheme()
+
     return (
-        <div className="flex items-center bg-[var(--bg-tertiary)] border-2 border-[var(--border-primary)] p-0.5 gap-0.5">
-            {THEMES.map((t) => (
-                <button
-                    key={t.id}
-                    title={t.label}
-                    onClick={() => setTheme(t.id)}
-                    className={clsx(
-                        'w-8 h-8 flex items-center justify-center text-[15px] transition-all duration-200',
-                        theme === t.id
-                            ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] border-2 border-[var(--accent)]'
-                            : 'bg-transparent text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]',
-                    )}
-                >
-                    {t.icon}
-                </button>
-            ))}
+        <div className="flex items-center gap-1.5">
+            {/* ── Theme: light / dark ── */}
+            <div
+                className="flex items-center border-2 border-[var(--border-primary)] p-0.5 gap-0.5"
+                style={{background: 'var(--bg-tertiary)'}}
+                title="Color scheme"
+            >
+                {([
+                    {id: 'light', icon: '☀', label: 'Light'},
+                    {id: 'dark', icon: '☾', label: 'Dark'},
+                ] as const).map((t) => (
+                    <button
+                        key={t.id}
+                        title={t.label}
+                        onClick={() => setTheme(t.id)}
+                        className={clsx(
+                            'w-8 h-8 flex items-center justify-center text-[15px] transition-all duration-150',
+                            theme === t.id
+                                ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] border-2 border-[var(--accent)]'
+                                : 'bg-transparent text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]',
+                        )}
+                    >
+                        {t.icon}
+                    </button>
+                ))}
+            </div>
+
+            {/* ── Design system ── */}
+            <div
+                className="flex items-center border-2 border-[var(--border-primary)] p-0.5 gap-0.5"
+                style={{background: 'var(--bg-tertiary)'}}
+                title="Design system"
+            >
+                {([
+                    {id: 'voicebox', label: 'VB', title: 'VoiceBox — editorial sharp'},
+                    {id: 'ember', label: 'EM', title: 'Ember Studio — warm craft'},
+                ] as const).map((d) => (
+                    <button
+                        key={d.id}
+                        title={d.title}
+                        onClick={() => setDesign(d.id)}
+                        className={clsx(
+                            'w-8 h-8 flex items-center justify-center text-[10px] font-bold tracking-wide transition-all duration-150',
+                            design === d.id
+                                ? 'bg-[var(--bg-primary)] text-[var(--accent)] border-2 border-[var(--accent)]'
+                                : 'bg-transparent text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]',
+                        )}
+                    >
+                        {d.label}
+                    </button>
+                ))}
+            </div>
         </div>
     )
 }
+
