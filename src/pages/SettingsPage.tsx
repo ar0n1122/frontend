@@ -98,8 +98,8 @@ export default function SettingsPage() {
         {id: 'ember', label: 'Ember Studio', icon: '🔥', desc: 'Warm craft aesthetic — terracotta, serif, soft radius'},
     ]
 
-    const THEMES: {id: 'light' | 'dark'; label: string; icon: string; desc: string}[] = [
-        {id: 'light', label: 'Light', icon: '☀', desc: 'Bright backgrounds — best in well-lit environments'},
+    const THEMES: {id: 'colored' | 'dark'; label: string; icon: string; desc: string}[] = [
+        {id: 'colored', label: 'Colored', icon: '✦', desc: 'Original brand colors exactly as designed'},
         {id: 'dark', label: 'Dark', icon: '☾', desc: 'Dark backgrounds — easy on the eyes at night'},
     ]
 

@@ -6,7 +6,7 @@ import {
     useState,
 } from 'react'
 
-export type Theme = 'light' | 'dark'
+export type Theme = 'colored' | 'dark'
 export type Design = 'voicebox' | 'ember'
 
 interface ThemeContextValue {
@@ -23,9 +23,9 @@ const DESIGN_KEY = 'rag-design'
 
 function resolveTheme(): Theme {
     const saved = localStorage.getItem(THEME_KEY)
-    if (saved === 'light' || saved === 'dark') return saved
-    // migrate old values ('dark'/'solarized' were voicebox-light)
-    return 'light'
+    if (saved === 'colored' || saved === 'dark') return saved
+    // migrate old values: 'light'/'dark'/'solarized' all become 'colored'
+    return 'colored'
 }
 
 function resolveDesign(): Design {
