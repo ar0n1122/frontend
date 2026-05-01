@@ -37,9 +37,23 @@ http.interceptors.response.use(
     if (err?.response?.status === 401 && !requestUrl.startsWith("/auth")) {
       window.dispatchEvent(new CustomEvent("auth:expired"));
     }
+    // Rate limit exhausted — dispatch a global event so the UI can react
+    if (err?.response?.status === 429) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const rateLimitMsg: string =
+        err?.response?.data?.error ??
+        "You have exhausted your free use limit. Contact Admin";
+      window.dispatchEvent(
+        new CustomEvent("rate-limit:exceeded", { detail: { message: rateLimitMsg } }),
+      );
+    }
+    // RAGExceptions use "error" key; standard FastAPI validation uses "detail"
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const msg: string =
-      err?.response?.data?.detail ?? err.message ?? "Unknown error";
+      err?.response?.data?.detail ??
+      err?.response?.data?.error ??
+      err.message ??
+      "Unknown error";
     return Promise.reject(new Error(msg));
   },
 );

@@ -7,9 +7,12 @@ interface AuthContextValue {
     user: AuthUser | null
     isLoading: boolean
     isSessionExpired: boolean
+    isRateLimited: boolean
+    rateLimitMessage: string
     signIn: (googleIdToken: string) => Promise<void>
     signOut: () => void
     clearSessionExpired: () => void
+    clearRateLimited: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -21,6 +24,8 @@ export function AuthProvider({children}: {children: ReactNode}) {
     const [user, setUser] = useState<AuthUser | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [isSessionExpired, setIsSessionExpired] = useState(false)
+    const [isRateLimited, setIsRateLimited] = useState(false)
+    const [rateLimitMessage, setRateLimitMessage] = useState('')
 
     // Restore session from localStorage on mount
     useEffect(() => {
@@ -49,6 +54,18 @@ export function AuthProvider({children}: {children: ReactNode}) {
         return () => window.removeEventListener('auth:expired', handleExpired)
     }, [])
 
+    // Listen for 429 rate-limit events from the API interceptor
+    useEffect(() => {
+        const handleRateLimit = (e: Event) => {
+            const msg = (e as CustomEvent<{message: string}>).detail?.message ??
+                'You have exhausted your free use limit. Contact Admin'
+            setIsRateLimited(true)
+            setRateLimitMessage(msg)
+        }
+        window.addEventListener('rate-limit:exceeded', handleRateLimit)
+        return () => window.removeEventListener('rate-limit:exceeded', handleRateLimit)
+    }, [])
+
     const signIn = useCallback(async (googleIdToken: string) => {
         const res = await authApi.googleSignIn(googleIdToken)
         localStorage.setItem(TOKEN_KEY, res.access_token)
@@ -67,8 +84,13 @@ export function AuthProvider({children}: {children: ReactNode}) {
         setIsSessionExpired(false)
     }, [])
 
+    const clearRateLimited = useCallback(() => {
+        setIsRateLimited(false)
+        setRateLimitMessage('')
+    }, [])
+
     return (
-        <AuthContext.Provider value={{user, isLoading, isSessionExpired, signIn, signOut, clearSessionExpired}}>
+        <AuthContext.Provider value={{user, isLoading, isSessionExpired, isRateLimited, rateLimitMessage, signIn, signOut, clearSessionExpired, clearRateLimited}}>
             {children}
         </AuthContext.Provider>
     )
