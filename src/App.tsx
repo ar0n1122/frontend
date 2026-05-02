@@ -5,9 +5,6 @@ import {AuthProvider, useAuth} from '@/context/AuthContext'
 import Layout from '@/components/Layout'
 import ChatPage from '@/pages/ChatPage'
 import DocumentsPage from '@/pages/DocumentsPage'
-import EvaluationPage from '@/pages/EvaluationPage'
-import HealthPage from '@/pages/HealthPage'
-import SettingsPage from '@/pages/SettingsPage'
 import UsagePage from '@/pages/UsagePage'
 import LoginPage from '@/pages/LoginPage'
 import ReLoginModal from '@/components/ReLoginModal'
@@ -48,10 +45,7 @@ function AuthenticatedRoutes() {
                     <Route index element={<Navigate to="/chat" replace />} />
                     <Route path="chat" element={<ChatPage />} />
                     <Route path="documents" element={<DocumentsPage />} />
-                    <Route path="evaluation" element={<EvaluationPage />} />
-                    <Route path="health" element={<HealthPage />} />
                     <Route path="usage" element={<UsagePage />} />
-                    <Route path="settings" element={<SettingsPage />} />
                 </Route>
             </Routes>
         </>
