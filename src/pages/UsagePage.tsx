@@ -1,11 +1,7 @@
 import {useState} from 'react'
 import {useUsage} from '@/hooks/useUsage'
-import {useDocuments} from '@/hooks/useDocuments'
+import {useLimits} from '@/hooks/useLimits'
 import type {OperationBreakdown, UsageRecord} from '@/types'
-
-/* ── Limits (free tier) ──────────────────────────────────── */
-const DOC_LIMIT = 3
-const QUESTION_LIMIT = 15
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -194,17 +190,19 @@ function LimitMeter({
     used,
     limit,
     accentColor,
+    informationalOnly = false,
 }: {
     icon: string
     label: string
     used: number
     limit: number
     accentColor: string
+    informationalOnly?: boolean
 }) {
     const pct = Math.min((used / limit) * 100, 100)
     const remaining = Math.max(limit - used, 0)
-    const exhausted = used >= limit
-    const warn = pct >= 80
+    const exhausted = !informationalOnly && used >= limit
+    const warn = !informationalOnly && pct >= 80 && !exhausted
 
     return (
         <div
@@ -250,7 +248,7 @@ function LimitMeter({
                 />
             </div>
             <div className="text-[12px] text-[var(--text-secondary)]">
-                {exhausted ? 'No slots remaining' : `${remaining} remaining`}
+                {informationalOnly ? 'No limit enforced on your account' : exhausted ? 'No slots remaining' : `${remaining} remaining`}
             </div>
         </div>
     )
@@ -260,14 +258,19 @@ function LimitMeter({
 
 export default function UsagePage() {
     const {summary, history, loading, error, refresh} = useUsage()
-    const {data: docs} = useDocuments()
+    const {limits, loading: limitsLoading} = useLimits()
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [tab, setTab] = useState<'operation' | 'model'>('operation')
 
-    const docCount = docs?.length ?? 0
-    const questionCount = summary?.total_queries ?? 0
+    // Use real counters from Redis (what the rate limiter actually enforces).
+    // Fall back to zeros while loading.
+    const docCount = limits?.doc_count ?? 0
+    const questionCount = limits?.query_count ?? 0
+    const docLimit = limits?.doc_limit ?? 3
+    const questionLimit = limits?.query_limit ?? 15
+    const isExempt = limits?.is_exempt ?? false
 
-    if (loading) {
+    if (loading || limitsLoading) {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="text-[var(--text-tertiary)] text-lg">Loading usage data...</div>
@@ -325,7 +328,7 @@ export default function UsagePage() {
                         borderColor: 'var(--border-primary)',
                     }}
                 >
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
                         <span className="text-lg">🎁</span>
                         <h2 className="text-[15px] font-bold text-[var(--text-primary)]">Free Tier Limits</h2>
                         <span
@@ -334,21 +337,44 @@ export default function UsagePage() {
                         >
                             Free Plan
                         </span>
+                        {isExempt && (
+                            <span
+                                className="text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                                style={{background: '#16a34a', color: '#fff'}}
+                            >
+                                ✓ Limits Exempt
+                            </span>
+                        )}
                     </div>
+
+                    {isExempt && (
+                        <div
+                            className="flex items-start gap-2 rounded-lg px-4 py-2.5 mb-4 text-[13px]"
+                            style={{background: 'color-mix(in srgb, #16a34a 12%, var(--bg-tertiary))', border: '1px solid color-mix(in srgb, #16a34a 30%, transparent)'}}
+                        >
+                            <span className="mt-0.5">ℹ️</span>
+                            <span style={{color: 'var(--text-primary)'}}>
+                                Your account is <strong>exempt from limits</strong>. The meters below are for reference only — they show what applies to standard accounts. You can upload and query without restriction.
+                            </span>
+                        </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row gap-4 mb-5">
                         <LimitMeter
                             icon="📄"
                             label="Documents Uploaded"
                             used={docCount}
-                            limit={DOC_LIMIT}
+                            limit={docLimit}
                             accentColor="#7c3aed"
+                            informationalOnly={isExempt}
                         />
                         <LimitMeter
                             icon="💬"
                             label="Questions Asked"
                             used={questionCount}
-                            limit={QUESTION_LIMIT}
+                            limit={questionLimit}
                             accentColor="#0891b2"
+                            informationalOnly={isExempt}
                         />
                     </div>
                     {/* Total tokens row */}

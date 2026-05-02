@@ -12,6 +12,7 @@ import type {
   QueryResponse,
   UsageRecord,
   UsageSummary,
+  UserLimits,
 } from "@/types";
 
 // ===== AXIOS INSTANCE =====
@@ -44,7 +45,9 @@ http.interceptors.response.use(
         err?.response?.data?.error ??
         "You have exhausted your free use limit. Contact Admin";
       window.dispatchEvent(
-        new CustomEvent("rate-limit:exceeded", { detail: { message: rateLimitMsg } }),
+        new CustomEvent("rate-limit:exceeded", {
+          detail: { message: rateLimitMsg },
+        }),
       );
     }
     // RAGExceptions use "error" key; standard FastAPI validation uses "detail"
@@ -194,6 +197,9 @@ export const usageApi = {
     end_date?: string;
   }): Promise<UsageRecord[]> =>
     http.get<UsageRecord[]>("/usage/history", { params }).then((r) => r.data),
+
+  limits: (): Promise<UserLimits> =>
+    http.get<UserLimits>("/usage/limits").then((r) => r.data),
 };
 
 export default http;

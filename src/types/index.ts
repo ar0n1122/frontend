@@ -298,3 +298,11 @@ export interface UsageSummary {
   breakdown_by_operation: Record<string, OperationBreakdown>;
   daily_costs: Record<string, number>;
 }
+
+export interface UserLimits {
+  doc_limit: number;
+  query_limit: number;
+  doc_count: number;
+  query_count: number;
+  is_exempt: boolean;
+}

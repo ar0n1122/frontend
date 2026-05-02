@@ -12,12 +12,25 @@ export function useUsage() {
     setLoading(true);
     setError(null);
     try {
-      const [s, h] = await Promise.all([
+      // Fetch summary and history independently so a history failure
+      // does not block the summary/limits from rendering.
+      const [summaryResult, historyResult] = await Promise.allSettled([
         usageApi.summary(),
         usageApi.history({ limit: 100 }),
       ]);
-      setSummary(s);
-      setHistory(h);
+
+      if (summaryResult.status === "fulfilled") {
+        setSummary(summaryResult.value);
+      } else {
+        throw summaryResult.reason;
+      }
+
+      if (historyResult.status === "fulfilled") {
+        setHistory(historyResult.value);
+      } else {
+        // History failing is non-fatal — keep existing history, log quietly
+        console.warn("Usage history fetch failed:", historyResult.reason);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load usage data");
     } finally {
