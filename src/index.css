@@ -82,6 +82,10 @@
   --chart-5: #dc2626;
   --chart-bar-bg: #e5e5e5;
 
+  --btn-primary-bg: #0a0a0a;
+  --btn-primary-text: #fafafa;
+  --btn-primary-bg-hover: #ef4444;
+
   --font-display: 'Archivo Black', Impact, 'Arial Black', sans-serif;
   --font-body: 'Work Sans', -apple-system, 'Segoe UI', Helvetica, sans-serif;
   --font-mono: 'Space Mono', 'Courier New', Consolas, monospace;
@@ -163,6 +167,10 @@
   --chart-4: #fafafa;
   --chart-5: #dc2626;
   --chart-bar-bg: #262626;
+
+  --btn-primary-bg: #7c3aed;
+  --btn-primary-text: #ffffff;
+  --btn-primary-bg-hover: #6d28d9;
 
   --font-display: 'Archivo Black', Impact, 'Arial Black', sans-serif;
   --font-body: 'Work Sans', -apple-system, 'Segoe UI', Helvetica, sans-serif;
@@ -247,6 +255,10 @@
   --chart-5: #9a3412;
   --chart-bar-bg: #e7e5e4;
 
+  --btn-primary-bg: #1c1917;
+  --btn-primary-text: #fafaf9;
+  --btn-primary-bg-hover: #c2410c;
+
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body: 'Source Sans 3', -apple-system, 'Segoe UI', Helvetica, sans-serif;
   --font-mono: 'Fira Code', 'Courier New', Consolas, monospace;
@@ -329,6 +341,10 @@
   --chart-4: #fafaf9;
   --chart-5: #9a3412;
   --chart-bar-bg: #3d3936;
+
+  --btn-primary-bg: #7c3aed;
+  --btn-primary-text: #ffffff;
+  --btn-primary-bg-hover: #6d28d9;
 
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body: 'Source Sans 3', -apple-system, 'Segoe UI', Helvetica, sans-serif;

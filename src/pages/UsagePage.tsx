@@ -1,6 +1,11 @@
 import {useState} from 'react'
 import {useUsage} from '@/hooks/useUsage'
+import {useDocuments} from '@/hooks/useDocuments'
 import type {OperationBreakdown, UsageRecord} from '@/types'
+
+/* ── Limits (free tier) ──────────────────────────────────── */
+const DOC_LIMIT = 3
+const QUESTION_LIMIT = 15
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -61,26 +66,6 @@ function BarSegment({label, value, max, color}: {label: string; value: number; m
                 />
             </div>
             <span className="w-[60px] text-right font-mono text-[var(--text-primary)]">{fmtTokens(value)}</span>
-        </div>
-    )
-}
-
-/* ── Stat Card ───────────────────────────────────────────── */
-
-function StatCard({label, value, sub, accent}: {label: string; value: string; sub?: string; accent?: boolean}) {
-    return (
-        <div
-            className="rounded-2xl p-5 border transition-shadow hover:shadow-md"
-            style={{
-                background: accent
-                    ? 'linear-gradient(135deg, var(--accent), var(--accent-secondary))'
-                    : 'var(--bg-primary)',
-                borderColor: accent ? 'transparent' : 'var(--border-primary)',
-            }}
-        >
-            <div className={`text-[12px] font-medium uppercase tracking-wide ${accent ? 'text-white/70' : 'text-[var(--text-tertiary)]'}`}>{label}</div>
-            <div className={`text-[28px] font-bold mt-1 tracking-tight ${accent ? 'text-white' : 'text-[var(--text-primary)]'}`}>{value}</div>
-            {sub && <div className={`text-[12px] mt-0.5 ${accent ? 'text-white/60' : 'text-[var(--text-tertiary)]'}`}>{sub}</div>}
         </div>
     )
 }
@@ -201,12 +186,86 @@ function QueryRow({record, expanded, onToggle}: {record: UsageRecord; expanded: 
     )
 }
 
+/* ── Limit Meter ─────────────────────────────────────────── */
+
+function LimitMeter({
+    icon,
+    label,
+    used,
+    limit,
+    accentColor,
+}: {
+    icon: string
+    label: string
+    used: number
+    limit: number
+    accentColor: string
+}) {
+    const pct = Math.min((used / limit) * 100, 100)
+    const remaining = Math.max(limit - used, 0)
+    const exhausted = used >= limit
+    const warn = pct >= 80
+
+    return (
+        <div
+            className="flex-1 rounded-xl p-4 border"
+            style={{
+                background: 'var(--bg-card)',
+                borderColor: exhausted ? 'var(--danger)' : warn ? 'var(--warning)' : 'var(--border-primary)',
+            }}
+        >
+            <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">{icon}</span>
+                <span className="text-[13px] font-semibold text-[var(--text-primary)]">{label}</span>
+                {exhausted && (
+                    <span
+                        className="ml-auto text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                        style={{background: 'var(--danger)', color: '#fff'}}
+                    >
+                        Limit Reached
+                    </span>
+                )}
+                {!exhausted && warn && (
+                    <span
+                        className="ml-auto text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                        style={{background: 'var(--warning)', color: '#fff'}}
+                    >
+                        Almost Full
+                    </span>
+                )}
+            </div>
+            <div className="flex items-end gap-1 mb-2">
+                <span className="text-[28px] font-bold leading-none" style={{color: exhausted ? 'var(--danger)' : accentColor}}>
+                    {used}
+                </span>
+                <span className="text-[15px] text-[var(--text-tertiary)] mb-0.5">/ {limit}</span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden mb-2" style={{background: 'var(--bg-tertiary)'}}>
+                <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                        width: `${Math.max(pct, pct > 0 ? 2 : 0)}%`,
+                        background: exhausted ? 'var(--danger)' : warn ? 'var(--warning)' : accentColor,
+                    }}
+                />
+            </div>
+            <div className="text-[12px] text-[var(--text-secondary)]">
+                {exhausted ? 'No slots remaining' : `${remaining} remaining`}
+            </div>
+        </div>
+    )
+}
+
 /* ── Main Page ────────────────────────────────────────────── */
 
 export default function UsagePage() {
     const {summary, history, loading, error, refresh} = useUsage()
+    const {data: docs} = useDocuments()
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [tab, setTab] = useState<'operation' | 'model'>('operation')
+
+    const docCount = docs?.length ?? 0
+    const questionCount = summary?.total_queries ?? 0
 
     if (loading) {
         return (
@@ -240,27 +299,85 @@ export default function UsagePage() {
         <div className="h-full overflow-y-auto">
             <div className="max-w-[1200px] mx-auto px-6 py-6 space-y-6">
 
-                {/* ── Summary Cards ────────────────────────────────── */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard
-                        label="Total Cost"
-                        value={fmt$(s?.total_cost ?? 0)}
-                        sub={`${s?.total_queries ?? 0} queries`}
-                        accent
-                    />
-                    <StatCard
-                        label="Total Tokens"
-                        value={fmtTokens(s?.total_tokens ?? 0)}
-                        sub={`${fmtTokens(s?.total_prompt_tokens ?? 0)} in / ${fmtTokens(s?.total_completion_tokens ?? 0)} out`}
-                    />
-                    <StatCard
-                        label="Avg Cost / Query"
-                        value={fmt$(s?.avg_cost_per_query ?? 0)}
-                    />
-                    <StatCard
-                        label="Avg Tokens / Query"
-                        value={fmtTokens(s?.avg_tokens_per_query ?? 0)}
-                    />
+                {/* ── Free Tier Notice ──────────────────────────────── */}
+                <div
+                    className="flex items-start gap-3 rounded-lg border px-4 py-3"
+                    style={{
+                        background: 'color-mix(in srgb, var(--warning) 10%, var(--bg-card))',
+                        borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
+                    }}
+                >
+                    <span className="text-lg mt-0.5">⚠️</span>
+                    <p className="text-[13px] leading-relaxed" style={{color: 'var(--text-primary)'}}>
+                        <span className="font-semibold">Free tier notice —</span>{' '}
+                        All services (LLM, embeddings, vector store, cache) are running on free-tier providers.
+                        You may experience <span className="font-medium">increased latency</span>,{' '}
+                        <span className="font-medium">performance degradation</span>, or occasional{' '}
+                        <span className="font-medium">errors</span> due to rate limits and shared infrastructure.
+                    </p>
+                </div>
+
+                {/* ── Free Tier Limits Banner ───────────────────────── */}
+                <div
+                    className="rounded-xl border p-5"
+                    style={{
+                        background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--bg-card)), var(--bg-card))',
+                        borderColor: 'var(--border-primary)',
+                    }}
+                >
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className="text-lg">🎁</span>
+                        <h2 className="text-[15px] font-bold text-[var(--text-primary)]">Free Tier Limits</h2>
+                        <span
+                            className="ml-2 text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                            style={{background: 'var(--accent)', color: '#fff'}}
+                        >
+                            Free Plan
+                        </span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4 mb-5">
+                        <LimitMeter
+                            icon="📄"
+                            label="Documents Uploaded"
+                            used={docCount}
+                            limit={DOC_LIMIT}
+                            accentColor="#7c3aed"
+                        />
+                        <LimitMeter
+                            icon="💬"
+                            label="Questions Asked"
+                            used={questionCount}
+                            limit={QUESTION_LIMIT}
+                            accentColor="#0891b2"
+                        />
+                    </div>
+                    {/* Total tokens row */}
+                    <div
+                        className="flex items-center gap-4 rounded-lg px-4 py-3"
+                        style={{background: 'var(--bg-tertiary)'}}
+                    >
+                        <span className="text-xl">⚡</span>
+                        <div className="flex-1">
+                            <div className="text-[12px] text-[var(--text-secondary)] font-medium uppercase tracking-wide">
+                                Total Tokens Consumed (all time)
+                            </div>
+                            <div className="flex items-baseline gap-2 mt-0.5">
+                                <span className="text-[22px] font-bold text-[var(--text-primary)]">
+                                    {fmtTokens(s?.total_tokens ?? 0)}
+                                </span>
+                                <span className="text-[13px] text-[var(--text-tertiary)]">tokens</span>
+                                <span className="text-[12px] text-[var(--text-secondary)] ml-2">
+                                    {fmtTokens(s?.total_prompt_tokens ?? 0)} input
+                                    &nbsp;·&nbsp;
+                                    {fmtTokens(s?.total_completion_tokens ?? 0)} output
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-[12px] text-[var(--text-secondary)] uppercase tracking-wide">Est. Cost</div>
+                            <div className="text-[18px] font-bold text-[var(--text-primary)]">{fmt$(s?.total_cost ?? 0)}</div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── Daily Cost Chart ─────────────────────────────── */}

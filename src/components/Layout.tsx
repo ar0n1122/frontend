@@ -22,25 +22,13 @@ const NAV_MAIN: NavItemDef[] = [
         label: 'Documents',
         badge: (n) => (n > 0 ? String(n) : undefined),
     },
-]
-
-const NAV_ANALYTICS: NavItemDef[] = [
-    {to: '/evaluation', icon: '📊', label: 'Evaluation'},
     {to: '/usage', icon: '💰', label: 'Usage & Costs'},
-    {to: '/health', icon: '🏥', label: 'Health'},
-]
-
-const NAV_SETTINGS: NavItemDef[] = [
-    {to: '/settings', icon: '⚙️', label: 'Settings'},
 ]
 
 const PAGE_META: Record<string, {title: string; subtitle: string}> = {
     '/chat': {title: 'Chat', subtitle: 'Ask questions about your documents'},
     '/documents': {title: 'Documents', subtitle: 'Upload and manage your PDF documents'},
-    '/evaluation': {title: 'Evaluation', subtitle: 'Benchmark metrics and quality analysis'},
-    '/health': {title: 'System Health', subtitle: 'Service status and pipeline monitoring'},
-    '/usage': {title: 'Usage & Costs', subtitle: 'Token consumption, cost breakdown and analytics'},
-    '/settings': {title: 'Settings', subtitle: 'Configuration and preferences'},
+    '/usage': {title: 'Usage & Costs', subtitle: 'Limits, token consumption and cost analytics'},
 }
 
 export default function Layout() {
@@ -101,18 +89,6 @@ export default function Layout() {
                                 item={item}
                                 badge={item.badge?.(docCount)}
                             />
-                        ))}
-                    </NavSection>
-
-                    <NavSection label="Analytics">
-                        {NAV_ANALYTICS.map((item) => (
-                            <SidebarItem key={item.to} item={item} />
-                        ))}
-                    </NavSection>
-
-                    <NavSection label="Settings">
-                        {NAV_SETTINGS.map((item) => (
-                            <SidebarItem key={item.to} item={item} />
                         ))}
                     </NavSection>
                 </nav>
