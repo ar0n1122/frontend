@@ -206,12 +206,11 @@ export function useChat(opts: UseChatOptions) {
           if (sid) scheduleSave(sid, next);
           return next;
         });
-      } catch {
+      } catch (err) {
         const errMsg: ChatMessage = {
           id: botMsgId,
           role: "assistant",
-          content:
-            "⚠️ Failed to get a response. Please check the backend is running on `localhost:8000`.",
+          content: "⚠️ Something went wrong. Please try again in a moment.",
           timestamp: new Date(),
           isError: true,
         };
@@ -308,12 +307,11 @@ export function useChat(opts: UseChatOptions) {
           if (sid) scheduleSave(sid, next);
           return next;
         });
-      } catch {
+      } catch (err) {
         const errMsg: ChatMessage = {
           id: botMsgId,
           role: "assistant",
-          content:
-            "⚠️ Failed to get a response. Please check the backend is running on `localhost:8000`.",
+          content: "⚠️ Something went wrong. Please try again in a moment.",
           timestamp: new Date(),
           isError: true,
         };
