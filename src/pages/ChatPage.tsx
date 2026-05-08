@@ -1,4 +1,4 @@
-import {useCallback, useRef, useState} from 'react'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import MessageBubble from '@/components/chat/MessageBubble'
 import TypingIndicator from '@/components/chat/TypingIndicator'
 import {useChat} from '@/hooks/useChat'
@@ -43,6 +43,11 @@ export default function ChatPage() {
     const endRef = useRef<HTMLDivElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+    // Scroll to latest message whenever the messages array updates
+    useEffect(() => {
+        endRef.current?.scrollIntoView({behavior: 'smooth'})
+    }, [messages])
+
     const handleSend = useCallback(async () => {
         const q = inputValue.trim()
         if (!q) return
@@ -58,7 +63,6 @@ export default function ChatPage() {
         // Fire-and-forget — don't await so the user can send more messages immediately
         void sendMessage(q, {document_ids: effectiveIds, document_metadata: metadata})
         setAttachedIds(undefined)
-        endRef.current?.scrollIntoView({behavior: 'smooth'})
     }, [inputValue, sendMessage, attachedIds, documentIds])
 
     const handleKey = (e: React.KeyboardEvent) => {

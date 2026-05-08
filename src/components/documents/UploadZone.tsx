@@ -10,18 +10,29 @@ interface UploadZoneProps {
     uploads: UploadingFile[]
     onClear: () => void
     onCheckStatus?: (documentId: string) => void
+    disabled?: boolean
+    disabledMessage?: string
 }
 
-export default function UploadZone({onDrop, uploads, onClear, onCheckStatus}: UploadZoneProps) {
+export default function UploadZone({
+    onDrop,
+    uploads,
+    onClear,
+    onCheckStatus,
+    disabled = false,
+    disabledMessage = 'Uploads are temporarily unavailable.',
+}: UploadZoneProps) {
     const handleDrop = useCallback(
         (accepted: File[]) => {
+            if (disabled) return
             if (accepted.length) onDrop(accepted)
         },
-        [onDrop],
+        [disabled, onDrop],
     )
 
     const {getRootProps, getInputProps, isDragActive} = useDropzone({
         onDrop: handleDrop,
+        disabled,
         accept: {
             'application/pdf': ['.pdf'],
             'application/zip': ['.zip'],
@@ -36,23 +47,40 @@ export default function UploadZone({onDrop, uploads, onClear, onCheckStatus}: Up
             <div
                 {...getRootProps()}
                 className={clsx(
-                    'upload-zone rounded-xl text-center p-10 cursor-pointer border-2 border-dashed',
-                    isDragActive
+                    'upload-zone rounded-xl text-center p-10 border-2 border-dashed',
+                    disabled
+                        ? 'cursor-not-allowed border-[var(--border-secondary)] bg-[var(--bg-tertiary)] opacity-70'
+                        : 'cursor-pointer',
+                    !disabled && isDragActive
                         ? 'active border-[var(--accent)] bg-[var(--accent-light)] scale-[1.01]'
-                        : 'border-[var(--bg-upload-border)] bg-[var(--bg-upload)] hover:border-[var(--accent)]',
+                        : !disabled
+                            ? 'border-[var(--bg-upload-border)] bg-[var(--bg-upload)] hover:border-[var(--accent)]'
+                            : '',
                 )}
             >
                 <input {...getInputProps()} />
                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center text-white text-2xl shadow-lg shadow-[var(--accent)]/20">
-                    {isDragActive ? '⬇' : '↑'}
+                    {disabled ? '!' : isDragActive ? '⬇' : '↑'}
                 </div>
                 <h3 className="text-[16px] font-bold text-[var(--text-primary)] mb-1">
-                    {isDragActive ? 'Drop your files here' : 'Drop PDF or ZIP files here'}
+                    {disabled
+                        ? 'File upload is disabled'
+                        : isDragActive
+                            ? 'Drop your files here'
+                            : 'Drop PDF or ZIP files here'}
                 </h3>
                 <p className="text-[13px] text-[var(--text-tertiary)] mb-4">
-                    or click to browse · max 10 files, 50 MB total · supports PDF and ZIP
+                    {disabled
+                        ? disabledMessage
+                        : 'or click to browse · max 10 files, 50 MB total · supports PDF and ZIP'}
                 </p>
-                <Button variant="primary" size="md" className="shadow-md" onClick={(e) => e.stopPropagation()}>
+                <Button
+                    variant="primary"
+                    size="md"
+                    className="shadow-md"
+                    disabled={disabled}
+                    onClick={(e) => e.stopPropagation()}
+                >
                     Choose Files
                 </Button>
             </div>

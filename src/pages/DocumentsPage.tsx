@@ -4,6 +4,7 @@ import Button from '@/components/ui/Button'
 import DocumentCard from '@/components/documents/DocumentCard'
 import UploadZone from '@/components/documents/UploadZone'
 import {useDeleteDocument, useDocuments, useReindexDocument, useUploadDocument} from '@/hooks/useDocuments'
+import {appUnavailableMessage, isAppUnavailable} from '@/config/appStatus'
 
 export default function DocumentsPage() {
     const {data: docs, isLoading, isError, refetch, isFetching} = useDocuments()
@@ -53,7 +54,14 @@ export default function DocumentsPage() {
     return (
         <div className="h-full overflow-y-auto px-6 py-6">
             {/* Upload */}
-            <UploadZone onDrop={upload} uploads={uploads} onClear={clearDone} onCheckStatus={checkStatus} />
+            <UploadZone
+                onDrop={upload}
+                uploads={uploads}
+                onClear={clearDone}
+                onCheckStatus={checkStatus}
+                disabled={isAppUnavailable}
+                disabledMessage={appUnavailableMessage}
+            />
 
             {/* Header with refresh */}
             <div className="flex items-center justify-between mt-7 mb-4 flex-wrap gap-3">
