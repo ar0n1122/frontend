@@ -17,6 +17,8 @@ jobs:
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_APP_UNAVAILABLE: ${{ vars.VITE_APP_UNAVAILABLE }}
+          VITE_APP_UNAVAILABLE_MESSAGE: ${{ vars.VITE_APP_UNAVAILABLE_MESSAGE }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -25,3 +27,5 @@ jobs:
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_APP_UNAVAILABLE: ${{ vars.VITE_APP_UNAVAILABLE }}
+          VITE_APP_UNAVAILABLE_MESSAGE: ${{ vars.VITE_APP_UNAVAILABLE_MESSAGE }}
